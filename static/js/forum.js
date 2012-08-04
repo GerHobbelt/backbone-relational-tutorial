@@ -57,10 +57,11 @@
         className: 'thread_list_view',
         
         initialize: function(){
-            _.bindAll(this, 'render', 'render_thread_summary', 'on_submit', 'on_thread_created', 'on_error');
+            _.bindAll(this, 'render', 'render_thread_summary', 'on_submit', 'on_thread_created', 'on_error', 'destroy');
             this.model.bind('reset', this.render); 
             this.model.bind('change', this.render); 
             this.model.bind('add', this.render_thread_summary); 
+						$.forum.app.on("route:show_thread", this.destroy);
         },
     
         template: Handlebars.compile($('#tpl_thread_list').html()),
@@ -68,6 +69,7 @@
         render: function() {
             $(this.el).html(this.template());
             this.model.forEach(this.render_thread_summary);
+						$("#content").append($(this.el));
             return $(this.el).html();
         },
         
@@ -103,6 +105,10 @@
             var error = $.parseJSON(response.responseText);
             this.$('.error_message').html(error.message);
         },
+
+				destroy: function(_id) {
+					this.remove();
+				} 
     });
     
     // Thread //
@@ -138,15 +144,18 @@
         className: 'thread_view',
         
         initialize: function(){
-            _.bindAll(this, 'render', 'render_message', 'on_submit');
+            _.bindAll(this, 'render', 'render_message', 'on_submit', 'destroy');
             this.model.bind('change', this.render);
             this.model.bind('reset', this.render);
             this.model.bind('add:messages', this.render_message); 
+						$.forum.app.on("route:show_thread_list", this.destroy);
         },
     
         template: Handlebars.compile($('#tpl_thread').html()),
         
         render: function() {
+						$(this.el).html(this.template(this.model.toJSON())); 
+						$('#content').append($(this.el));
             return $(this.el).html(this.template(this.model.toJSON()));
         },
         
@@ -165,6 +174,10 @@
                                                     thread: this.model});
             new_message.save();
         },
+
+				destroy: function() {
+					this.remove();
+				}
     });
     
     // Message //
@@ -196,14 +209,13 @@
     
         show_thread_list: function() {
             var thread_collection = new $.forum.ThreadCollection();
-            var thread_list_view = new $.forum.ThreadListView({el: $('#content'), 
-                                                                model: thread_collection });
+            var thread_list_view = new $.forum.ThreadListView({ model: thread_collection });
             thread_collection.fetch();
         },
         
         show_thread: function(_id) {
             var thread = new $.forum.Thread({_id: _id});
-            var thread_view = new $.forum.ThreadView({el: $('#content'), model: thread});
+            var thread_view = new $.forum.ThreadView({ model: thread });
             thread.fetch();
         },
         
